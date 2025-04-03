@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"log"
+	"os"
 	"sync"
 	"time"
 )
@@ -44,7 +47,7 @@ func NegativeNumber(input <-chan int, done chan int, b *BufRing) *BufRing {
 				}
 				if element > 0 {
 					mutex.Lock()
-					fmt.Printf("Элемент %v был добавлен в буфер\n", element)
+					log.Printf("Элемент %v был добавлен в буфер\n", element)
 					b.Add(element)
 					mutex.Unlock()
 					time.Sleep(time.Second)
@@ -63,7 +66,7 @@ func Filtr(b *BufRing) <-chan int {
 			time.Sleep(time.Second * time.Duration(timeInteraval))
 			mutex.Lock()
 			if b.data[b.head] == nil {
-				fmt.Println("Буффер пуст")
+				log.Printf("Буффер пуст:")
 				fmt.Println(b.data)
 				return
 			}
@@ -91,29 +94,22 @@ func main() {
 	buf := NewBufRing(bufferSize)
 	done := make(chan int)
 	start := []int{}
-	var value int
-ENTER:
-	for {
-		fmt.Println("Enter the value")
-		_, err := fmt.Scanln(&value)
-		if err != nil {
-			fmt.Println("Value is not correct")
-			break
-		}
-		start = append(start, value)
-		var action string
-		fmt.Println("Coutinue enter: Press Enter/Stop enter: Enter Stop")
-		fmt.Scanf("%s", &action)
-		switch action {
-		case "":
-			continue
-		case "Stop":
-			break ENTER
-		case "stop":
-			break ENTER
-		default:
-			fmt.Println("Unknow command")
-			break ENTER
+	fmt.Printf("Enter values separated by spaces:")
+	reader := bufio.NewReader(os.Stdin)
+	values, _ := reader.ReadString('\n')
+	n := 0
+	for i := 0; i < len(values); i++ {
+		if values[i] >= 48 && values[i] <= 57 {
+			if n == 0 {
+				n = int(rune(values[i]) - 48)
+			} else {
+				n = (n * 10) + int(rune(values[i]-48))
+			}
+		} else {
+			if n != 0 {
+				start = append(start, n)
+				n = 0
+			}
 		}
 	}
 	//Формирование исходного канала
@@ -131,10 +127,11 @@ ENTER:
 		}()
 		return output
 	}
-
+	log.Printf("Исходный канал сформирован\n")
 	input := init(start)
 	pipline := Filtr(NegativeNumber(input, done, &buf))
 	for v := range pipline {
-		fmt.Println(v)
+		log.Printf("Отфильтровонное число:%d\n", v)
 	}
+	log.Printf("Конец работы программы")
 }
