@@ -1,7 +1,7 @@
 FROM golang
-RUN mkdir -p/go/src/M26
+RUN mkdir -p /go/src/M26
 WORKDIR /go/src/M26
-RUN go env -w GO111MODULE=auto
+ADD go.mod .
 ADD main.go .
 RUN go install .
 
